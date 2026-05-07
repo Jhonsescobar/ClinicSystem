@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your Prisma schema file for Clinic Management System
+// Clinic Management System - Internal Application
 
 generator client {
   provider = "prisma-client-js"
@@ -13,20 +10,232 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// USER & AUTHENTICATION
+// ============================================
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  name      String?
+  password  String   // Hashed password (bcrypt)
+  name      String
+  role      UserRole  @default(ADMIN) // SUPER_ADMIN or ADMIN
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relations
+  attendances    Attendance[]
+  transactions   Transaction[]
+  auditLogs      AuditLog[]
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
+// ============================================
+// DOCTOR MANAGEMENT
+// ============================================
+
+model Doctor {
+  id        String      @id @default(cuid())
+  name      String
+  status    DoctorStatus @default(PERMANENT) // PERMANENT or SUBSTITUTE
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  // Relations
+  attendances   Attendance[]
+  transactions  Transaction[]
+
+  @@index([status])
+  @@index([isActive])
+}
+
+enum DoctorStatus {
+  PERMANENT
+  SUBSTITUTE
+}
+
+// ============================================
+// SHIFT MANAGEMENT
+// ============================================
+
+model Shift {
+  id          String   @id @default(cuid())
+  name        String   // "Shift 1", "Shift 2", "Shift 3"
+  startTime   String   // "08:00", "14:00", "20:00"
+  endTime     String   // "14:00", "20:00", "08:00"
+  description String?  // Optional description
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  attendances   Attendance[]
+  transactions  Transaction[]
+
+  @@unique([name])
+}
+
+// ============================================
+// ATTENDANCE SYSTEM
+// ============================================
+
+model Attendance {
+  id                String   @id @default(cuid())
+  doctorId          String?
+  manualDoctorName  String?  // For substitute doctors
+  shiftId           String
+  photoUrl          String   // Selfie photo path
+  attendanceDate    String   // Format: YYYY-MM-DD
+  attendanceTime    String   // Format: HH:MM
+  adminId           String   // Who recorded this
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relations
+  doctor    Doctor?    @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  shift     Shift      @relation(fields: [shiftId], references: [id])
+  admin     User       @relation(fields: [adminId], references: [id])
+
+  @@index([attendanceDate])
+  @@index([doctorId])
+  @@index([shiftId])
+}
+
+// ============================================
+// MEDICAL ACTIONS
+// ============================================
+
+model MedicalAction {
+  id        String   @id @default(cuid())
+  name      String   @unique // e.g., "Konsultasi", "Operasi Minor"
+  price     Int      // Price in IDR
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  transactionDetails TransactionDetail[]
+
+  @@index([isActive])
+}
+
+// ============================================
+// TRANSACTIONS
+// ============================================
+
+model Transaction {
+  id            String   @id @default(cuid())
+  doctorId      String?
+  shiftId       String
+  transactionDate String // Format: YYYY-MM-DD
+  totalAmount   Int      // Total in IDR
+  adminId       String   // Who created this transaction
+  isLocked      Boolean  @default(false) // Locked by daily lock system
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  doctor           Doctor?             @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  shift            Shift               @relation(fields: [shiftId], references: [id])
+  admin            User                @relation(fields: [adminId], references: [id])
+  transactionDetails TransactionDetail[]
+
+  @@index([transactionDate])
+  @@index([doctorId])
+  @@index([isLocked])
+}
+
+// ============================================
+// TRANSACTION DETAILS
+// ============================================
+
+model TransactionDetail {
+  id              String   @id @default(cuid())
+  transactionId   String
+  medicalActionId String
+  quantity        Int      // How many times this action was performed
+  unitPrice       Int      // Price at time of transaction
+  totalPrice      Int      // quantity * unitPrice
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  transaction    Transaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  medicalAction  MedicalAction @relation(fields: [medicalActionId], references: [id])
+
+  @@index([transactionId])
+  @@index([medicalActionId])
+}
+
+// ============================================
+// DAILY LOCK SYSTEM
+// ============================================
+
+model DailyLock {
+  id        String   @id @default(cuid())
+  lockDate  String   @unique // Format: YYYY-MM-DD
+  isLocked  Boolean  @default(false)
+  lockedAt  DateTime?
+  unlockedAt DateTime?
+  lockedBy  String?  // User ID who performed the action
+  unlockedBy String? // User ID who performed the action
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lockDate])
+}
+
+// ============================================
+// AUDIT LOGGING
+// ============================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      AuditAction
+  tableName   String
+  recordId    String?
+  dataBefore  String?  // JSON string
+  dataAfter   String?  // JSON string
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([tableName])
+  @@index([timestamp])
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  CREATE_ATTENDANCE
+  UPDATE_ATTENDANCE
+  DELETE_ATTENDANCE
+  CREATE_TRANSACTION
+  UPDATE_TRANSACTION
+  DELETE_TRANSACTION
+  CREATE_DOCTOR
+  UPDATE_DOCTOR
+  DELETE_DOCTOR
+  CREATE_ACTION
+  UPDATE_ACTION
+  DELETE_ACTION
+  LOCK_DAY
+  UNLOCK_DAY
+  CREATE_USER
+  UPDATE_USER
+  DELETE_USER
 }
