@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
+import { formatZodError } from '@/lib/zod-helper'
 import { z } from 'zod'
 
 const updateTransactionDetailSchema = z.object({
@@ -15,13 +16,14 @@ const updateTransactionSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await requireAuth()
 
     const transaction = await db.transaction.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         doctor: true,
         shift: true,
@@ -59,13 +61,14 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await requireAuth()
 
     const existingTransaction = await db.transaction.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         transactionDetails: true,
       },
@@ -96,7 +99,7 @@ export async function PUT(
     if (details) {
       // Delete old details
       await db.transactionDetail.deleteMany({
-        where: { transactionId: params.id },
+        where: { transactionId: id },
       })
 
       // Recalculate and create new details
@@ -133,7 +136,7 @@ export async function PUT(
     }
 
     const transaction = await db.transaction.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
       include: {
         doctor: true,
@@ -164,7 +167,7 @@ export async function PUT(
     console.error('Update transaction error:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validasi gagal', details: error.errors },
+        { error: 'Validasi gagal', details: formatZodError(error) },
         { status: 400 }
       )
     }
@@ -177,13 +180,14 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await requireAuth()
 
     const existingTransaction = await db.transaction.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!existingTransaction) {
@@ -201,7 +205,7 @@ export async function DELETE(
     }
 
     await db.transaction.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     await db.auditLog.create({
@@ -209,7 +213,7 @@ export async function DELETE(
         userId: user.id,
         action: 'DELETE_TRANSACTION',
         tableName: 'transactions',
-        recordId: params.id,
+        recordId: id,
         dataBefore: JSON.stringify(existingTransaction),
         ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
         userAgent: request.headers.get('user-agent') || 'unknown',

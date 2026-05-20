@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { verifyPassword, generateToken, setAuthCookie } from '@/lib/auth'
 import { z } from 'zod'
+import { formatZodError } from '@/lib/zod-helper'
 
 const loginSchema = z.object({
   email: z.string().email('Email tidak valid'),
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
     console.error('Login error:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validasi gagal', details: error.errors },
+        { error: 'Validasi gagal', details: formatZodError(error) },
         { status: 400 }
       )
     }

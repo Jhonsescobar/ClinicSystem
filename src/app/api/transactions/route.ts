@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
+import { formatZodError } from '@/lib/zod-helper'
 import { z } from 'zod'
 
 const transactionDetailSchema = z.object({
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
     console.error('Create transaction error:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validasi gagal', details: error.errors },
+        { error: 'Validasi gagal', details: formatZodError(error) },
         { status: 400 }
       )
     }

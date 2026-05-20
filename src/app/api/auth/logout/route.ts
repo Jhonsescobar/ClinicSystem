@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser, clearAuthCookie } from '@/lib/auth'
+import { db } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {

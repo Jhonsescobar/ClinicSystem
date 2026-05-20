@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
+import { formatZodError } from '@/lib/zod-helper'
 import { z } from 'zod'
 
 const updateDoctorSchema = z.object({
@@ -12,13 +13,14 @@ const updateDoctorSchema = z.object({
 // GET single doctor
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await requireAuth()
 
     const doctor = await db.doctor.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!doctor) {
@@ -41,13 +43,14 @@ export async function GET(
 // PUT update doctor
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await requireAuth('SUPER_ADMIN')
 
     const existingDoctor = await db.doctor.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!existingDoctor) {
@@ -61,7 +64,7 @@ export async function PUT(
     const data = updateDoctorSchema.parse(body)
 
     const doctor = await db.doctor.update({
-      where: { id: params.id },
+      where: { id },
       data,
     })
 
@@ -83,7 +86,7 @@ export async function PUT(
     console.error('Update doctor error:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validasi gagal', details: error.errors },
+        { error: 'Validasi gagal', details: formatZodError(error) },
         { status: 400 }
       )
     }
@@ -97,13 +100,14 @@ export async function PUT(
 // DELETE doctor
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await requireAuth('SUPER_ADMIN')
 
     const existingDoctor = await db.doctor.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!existingDoctor) {
@@ -114,7 +118,7 @@ export async function DELETE(
     }
 
     const doctor = await db.doctor.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     await db.auditLog.create({

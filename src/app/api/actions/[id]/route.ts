@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
+import { formatZodError } from '@/lib/zod-helper'
 import { z } from 'zod'
 
 const updateActionSchema = z.object({
@@ -11,13 +12,14 @@ const updateActionSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await requireAuth('SUPER_ADMIN')
 
     const existingAction = await db.medicalAction.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!existingAction) {
@@ -31,7 +33,7 @@ export async function PUT(
     const data = updateActionSchema.parse(body)
 
     const action = await db.medicalAction.update({
-      where: { id: params.id },
+      where: { id },
       data,
     })
 
@@ -53,7 +55,7 @@ export async function PUT(
     console.error('Update action error:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validasi gagal', details: error.errors },
+        { error: 'Validasi gagal', details: formatZodError(error) },
         { status: 400 }
       )
     }
@@ -66,13 +68,14 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const user = await requireAuth('SUPER_ADMIN')
 
     const existingAction = await db.medicalAction.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!existingAction) {
@@ -83,7 +86,7 @@ export async function DELETE(
     }
 
     const action = await db.medicalAction.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     await db.auditLog.create({

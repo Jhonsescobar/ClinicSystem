@@ -462,6 +462,93 @@
 
 ---
 
+## Task fix-3: Fix Build Errors - Missing Dependencies & Import Issues
+
+**Agent:** Z.ai Code (Main Agent)
+
+**Work Log:**
+- Installed missing `jsonwebtoken` package and its types
+  - `bun add jsonwebtoken`
+  - `bun add -D @types/jsonwebtoken`
+- Fixed missing `db` import in `/home/z/my-project/src/app/api/auth/logout/route.ts`
+- Fixed incorrect import path in `/home/z/my-project/src/app/dashboard/layout.tsx`
+  - Changed `./dashboard/page` to `./page`
+- Created `src/lib/zod-helper.ts` with Zod error formatting utilities
+  - `getZodErrors()` - Returns structured error array
+  - `formatZodError()` - Returns formatted error string
+
+**Stage Summary:**
+- All missing dependencies installed
+- All import issues resolved
+- Zod error handling centralized and consistent
+- Build errors eliminated
+
+---
+
+## Task fix-1: Fix Zod Error Handling
+
+**Agent:** general-purpose (sub-agent)
+
+**Work Log:**
+- Fixed Zod error handling in 9 API route files
+- Added `import { formatZodError } from '@/lib/zod-helper'` to all files
+- Replaced `error.errors` with `formatZodError(error)` in catch blocks
+
+**Files Updated:**
+1. `/home/z/my-project/src/app/api/doctors/route.ts` - Line 68
+2. `/home/z/my-project/src/app/api/doctors/[id]/route.ts` - Line 86
+3. `/home/z/my-project/src/app/api/attendance/route.ts` - Line 97
+4. `/home/z/my-project/src/app/api/actions/route.ts` - Line 64
+5. `/home/z/my-project/src/app/api/actions/[id]/route.ts` - Line 56
+6. `/home/z/my-project/src/app/api/transactions/route.ts` - Line 151
+7. `/home/z/my-project/src/app/api/transactions/[id]/route.ts` - Line 167
+8. `/home/z/my-project/src/app/api/users/route.ts` - Line 96
+9. `/home/z/my-project/src/app/api/users/[id]/route.ts` - Line 72
+
+**Stage Summary:**
+- All Zod error handling now uses the `formatZodError` helper function
+- Consistent error formatting across all API endpoints
+- Improved validation error messages for frontend consumption
+
+---
+
+## Task fix-2: Fix Next.js 16 Params Promise Issue
+
+**Agent:** general-purpose (sub-agent)
+
+**Work Log:**
+- Updated dynamic route handlers to handle Next.js 16's Promise-based params
+- Changed params type from `{ id: string }` to `Promise<{ id: string }>`
+- Added `const { id } = await params` at the beginning of each handler
+- Replaced all `params.id` references with just `id`
+
+**Files Updated:**
+
+1. `/home/z/my-project/src/app/api/doctors/[id]/route.ts`
+   - GET (line 14-40): Updated params type and added await
+   - PUT (line 44-96): Updated params type and added await
+   - DELETE (line 101-141): Updated params type and added await
+
+2. `/home/z/my-project/src/app/api/actions/[id]/route.ts`
+   - PUT (line 13-67): Updated params type and added await
+   - DELETE (line 69-110): Updated params type and added await
+
+3. `/home/z/my-project/src/app/api/transactions/[id]/route.ts`
+   - GET (line 17-59): Updated params type and added await
+   - PUT (line 62-178): Updated params type and added await
+   - DELETE (line 181-228): Updated params type and added await
+
+4. `/home/z/my-project/src/app/api/users/[id]/route.ts`
+   - PUT (line 14-82): Updated params type and added await
+   - DELETE (line 85-133): Updated params type and added await
+
+**Stage Summary:**
+- All dynamic route handlers now properly await the params Promise
+- Type safety maintained with updated TypeScript signatures
+- Compatible with Next.js 16's new async params pattern
+
+---
+
 **Next Steps (Optional Enhancements):**
 1. Add email notifications for important events
 2. Add data export to PDF
