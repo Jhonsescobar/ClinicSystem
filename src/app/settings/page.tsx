@@ -94,6 +94,8 @@ export default function SettingsPage() {
 
   const handleExportCode = async () => {
     try {
+      alert('Untuk mengunduh seluruh source code, silakan klik tombol download di sudut atas jendela preview (di sebelah kanan), kemudian ikuti panduan instalasi yang telah saya jelaskan sebelumnya.')
+
       const response = await fetch('/api/export-code')
       if (!response.ok) {
         throw new Error('Gagal mengekspor kode')
@@ -101,21 +103,33 @@ export default function SettingsPage() {
 
       const data = await response.json()
 
-      // Create JSON file and download
-      const jsonStr = JSON.stringify(data, null, 2)
-      const blob = new Blob([jsonStr], { type: 'application/json' })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `sistem-manajemen-klinik-${new Date().toISOString().split('T')[0]}.json`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      // Show instructions in alert
+      const message = `
+${data.description}
 
-      alert('Kode berhasil diekspor! File JSON berisi seluruh source code telah diunduh.')
+${data.message}
+
+Tech Stack:
+- Framework: ${data.techStack.framework}
+- Language: ${data.techStack.language}
+- Styling: ${data.techStack.styling}
+- Database: ${data.techStack.database}
+- Auth: ${data.techStack.auth}
+
+Cara Install:
+1. Ekstrak file zip yang diunduh dari sudut atas preview
+2. cd sistem-manajemen-klinik
+3. bun install
+4. Buat file .env dengan konfigurasi database dan JWT secret
+5. bun run db:push
+6. bun run db:seed
+7. bun run dev
+      `
+
+      alert(message.trim())
     } catch (error: any) {
-      alert(error.message || 'Terjadi kesalahan saat mengekspor kode')
+      console.error('Export error:', error)
+      alert(error.message || 'Terjadi kesalahan saat mengekspor kode. Gunakan tombol download di sudut atas preview panel.')
     }
   }
 
@@ -154,23 +168,22 @@ export default function SettingsPage() {
               Ekspor Kode Lengkap
             </CardTitle>
             <CardDescription>
-              Unduh seluruh source code aplikasi dalam format JSON
+              Panduan cara mengunduh dan menginstall aplikasi
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800">
-              <p className="font-medium mb-2">Tentang Fitur Ekspor Kode:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>Mengunduh seluruh source code dalam format JSON</li>
-                <li>Mencakup semua file TypeScript/JavaScript</li>
-                <li>File konfigurasi (package.json, tsconfig.json, dll)</li>
-                <li>Struktur direktori lengkap</li>
-                <li>Berguna untuk backup atau pemindahan ke server lain</li>
-              </ul>
+              <p className="font-medium mb-2">Cara Mengunduh Source Code:</p>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>Lihat di sudut atas jendela preview (sebelah kanan)</li>
+                <li>Klik tombol download (ikon download)</li>
+                <li>Ekstrak file zip yang diunduh</li>
+                <li>Ikuti panduan instalasi yang muncul setelah klik tombol di bawah</li>
+              </ol>
             </div>
             <Button className="w-full" onClick={handleExportCode}>
               <Download className="mr-2 h-4 w-4" />
-              Download Source Code (JSON)
+              Lihat Panduan Install
             </Button>
           </CardContent>
         </Card>
