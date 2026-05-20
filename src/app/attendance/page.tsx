@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CameraCapture } from '@/components/shared/CameraCapture'
-import { Camera, Plus, Trash2 } from 'lucide-react'
+import { ImageDialog } from '@/components/shared/ImageDialog'
+import { Camera, Plus, Trash2, Eye } from 'lucide-react'
 import { Doctor, Shift, Attendance } from '@/types'
 
 interface ActionItem {
@@ -25,6 +26,8 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true)
   const [cameraOpen, setCameraOpen] = useState(false)
   const [tempPhoto, setTempPhoto] = useState<string | null>(null)
+  const [imageDialogOpen, setImageDialogOpen] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<{ url: string; title: string; subtitle: string } | null>(null)
 
   const [form, setForm] = useState<ActionItem>({
     doctorId: '',
@@ -133,6 +136,15 @@ export default function AttendancePage() {
     } catch (error: any) {
       alert(error.message || 'Terjadi kesalahan')
     }
+  }
+
+  const handleViewImage = (attendance: Attendance) => {
+    setSelectedImage({
+      url: attendance.photoUrl,
+      title: attendance.doctor?.name || attendance.manualDoctorName || 'Dokter',
+      subtitle: `${attendance.shift?.name || ''} • ${attendance.attendanceDate} • ${attendance.attendanceTime}`,
+    })
+    setImageDialogOpen(true)
   }
 
   if (loading) {
@@ -285,11 +297,17 @@ export default function AttendancePage() {
                     key={attendance.id}
                     className="flex items-center gap-4 p-4 rounded-lg border"
                   >
-                    <img
-                      src={attendance.photoUrl}
-                      alt={attendance.doctor?.name || attendance.manualDoctorName}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
+                    <div className="relative group">
+                      <img
+                        src={attendance.photoUrl}
+                        alt={attendance.doctor?.name || attendance.manualDoctorName}
+                        className="w-16 h-16 rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => handleViewImage(attendance)}
+                      />
+                      <div className="absolute inset-0 bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" onClick={() => handleViewImage(attendance)}>
+                        <Eye className="h-5 w-5 text-white" />
+                      </div>
+                    </div>
                     <div className="flex-1">
                       <p className="font-medium">
                         {attendance.doctor?.name || attendance.manualDoctorName}
@@ -298,6 +316,13 @@ export default function AttendancePage() {
                         {attendance.shift?.name} • {attendance.attendanceTime}
                       </p>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleViewImage(attendance)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     <div className="text-right">
                       <p className="text-sm font-medium">
                         {attendance.admin?.name}
@@ -318,6 +343,16 @@ export default function AttendancePage() {
         <CameraCapture
           onCapture={handleCapturePhoto}
           onClose={() => setCameraOpen(false)}
+        />
+      )}
+
+      {selectedImage && (
+        <ImageDialog
+          open={imageDialogOpen}
+          onOpenChange={setImageDialogOpen}
+          imageUrl={selectedImage.url}
+          title={selectedImage.title}
+          subtitle={selectedImage.subtitle}
         />
       )}
     </div>

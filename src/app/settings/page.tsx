@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/useAuth'
 import { DailyLock, AuditLog, User } from '@/types'
-import { Lock, Unlock, AlertCircle } from 'lucide-react'
+import { Lock, Unlock, AlertCircle, Download } from 'lucide-react'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -92,6 +92,33 @@ export default function SettingsPage() {
     alert('Pengaturan berhasil disimpan (simulasi)')
   }
 
+  const handleExportCode = async () => {
+    try {
+      const response = await fetch('/api/export-code')
+      if (!response.ok) {
+        throw new Error('Gagal mengekspor kode')
+      }
+
+      const data = await response.json()
+
+      // Create JSON file and download
+      const jsonStr = JSON.stringify(data, null, 2)
+      const blob = new Blob([jsonStr], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `sistem-manajemen-klinik-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      alert('Kode berhasil diekspor! File JSON berisi seluruh source code telah diunduh.')
+    } catch (error: any) {
+      alert(error.message || 'Terjadi kesalahan saat mengekspor kode')
+    }
+  }
+
   // Don't render if user is not loaded yet
   if (!user) {
     return (
@@ -118,10 +145,39 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Export Code */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Ekspor Kode Lengkap
+            </CardTitle>
+            <CardDescription>
+              Unduh seluruh source code aplikasi dalam format JSON
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800">
+              <p className="font-medium mb-2">Tentang Fitur Ekspor Kode:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Mengunduh seluruh source code dalam format JSON</li>
+                <li>Mencakup semua file TypeScript/JavaScript</li>
+                <li>File konfigurasi (package.json, tsconfig.json, dll)</li>
+                <li>Struktur direktori lengkap</li>
+                <li>Berguna untuk backup atau pemindahan ke server lain</li>
+              </ul>
+            </div>
+            <Button className="w-full" onClick={handleExportCode}>
+              <Download className="mr-2 h-4 w-4" />
+              Download Source Code (JSON)
+            </Button>
+          </CardContent>
+        </Card>
+
         {/* Daily Lock Management */}
         {user?.role === 'SUPER_ADMIN' && (
-          <Card>
+          <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Lock className="h-5 w-5" />
@@ -203,7 +259,7 @@ export default function SettingsPage() {
         )}
 
         {/* System Settings */}
-        <Card>
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Pengaturan Klinik</CardTitle>
             <CardDescription>
