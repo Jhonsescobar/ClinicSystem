@@ -82,22 +82,22 @@ export default function AttendancePage() {
       // Upload photo first
       const blob = await fetch(form.photoUrl).then(r => r.blob())
       const file = new File([blob], 'attendance.jpg', { type: 'image/jpeg' })
-      
+
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+      uploadFormData.append('type', 'attendance')
+
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
-        body: (() => {
-          const formData = new FormData()
-          formData.append('file', file)
-          formData.append('type', 'attendance')
-          return formData
-        })(),
+        body: uploadFormData,
       })
 
-      const uploadData = await uploadRes.json()
-      
       if (!uploadRes.ok) {
-        throw new Error(uploadData.error || 'Upload failed')
+        const errorText = await uploadRes.text()
+        throw new Error(errorText || 'Upload failed')
       }
+
+      const uploadData = await uploadRes.json()
 
       // Create attendance
       const now = new Date()

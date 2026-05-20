@@ -581,6 +581,42 @@
 
 ---
 
+## Task fix-5: Fix Attendance Photo Upload Error
+
+**Agent:** Z.ai Code (Main Agent)
+
+**Work Log:**
+- Fixed critical bug: Upload API route file was missing
+  - Created `/home/z/my-project/src/app/api/upload/route.ts`
+  - Handles file upload for attendance and transaction photos
+  - Validates file type (images only) and size (max 5MB)
+  - Generates unique filenames with UUID
+  - Saves to appropriate upload directories
+- Created upload directories:
+  - `/home/z/my-project/uploads/attendance/`
+  - `/home/z/my-project/uploads/transaction/`
+- Improved error handling in attendance page
+  - Check response.ok before parsing JSON
+  - Use .text() for error responses to avoid parse errors
+  - File: `/home/z/my-project/src/app/attendance/page.tsx` (line 81-100)
+- Created comprehensive bug documentation in `BUG_FIX_ATTENDANCE.md`
+
+**Issue Resolved:**
+- ❌ "Unexpected token 'S', 'Server act'..." error → ✅ Fixed
+- ❌ Cannot save attendance with photo → ✅ Fixed
+
+**Root Cause:**
+The `/api/upload` route file was never created during initial development, causing 404 errors when frontend tried to upload photos. The 404 HTML response couldn't be parsed as JSON, causing the error.
+
+**Stage Summary:**
+- Upload endpoint now fully functional
+- Photo upload works correctly for attendance
+- Proper error handling prevents JSON parse errors
+- File validation (type & size) implemented
+- Unique filename generation prevents conflicts
+
+---
+
 **Next Steps (Optional Enhancements):**
 1. Add email notifications for important events
 2. Add data export to PDF
