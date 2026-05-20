@@ -2,8 +2,6 @@
 
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -33,6 +31,10 @@ export function ConfirmDialog({
   onConfirm,
   variant = 'default',
 }: ConfirmDialogProps) {
+  const handleConfirm = () => {
+    onConfirm()
+  }
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -41,12 +43,12 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel asChild>
-            <Button variant="outline">{cancelText}</Button>
-          </AlertDialogCancel>
-          <AlertDialogAction asChild onClick={onConfirm}>
-            <Button variant={variant}>{confirmText}</Button>
-          </AlertDialogAction>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {cancelText}
+          </Button>
+          <Button variant={variant} onClick={handleConfirm}>
+            {confirmText}
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

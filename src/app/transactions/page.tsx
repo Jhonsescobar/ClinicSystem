@@ -138,6 +138,9 @@ export default function TransactionsPage() {
         throw new Error(data.error || 'Gagal menyimpan transaksi')
       }
 
+      // Close the confirmation dialog
+      setConfirmDialogOpen(false)
+      
       resetForm()
       await fetchData()
     } catch (error: any) {
