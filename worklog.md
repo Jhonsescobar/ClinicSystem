@@ -549,6 +549,38 @@
 
 ---
 
+## Task fix-4: Fix Critical Bugs in Transactions & Settings
+
+**Agent:** Z.ai Code (Main Agent)
+
+**Work Log:**
+- Fixed transaction save validation error
+  - Changed `transactionDetails` to `details` in payload
+  - Removed `unitPrice` field (calculated by backend)
+  - File: `/home/z/my-project/src/app/transactions/page.tsx` (line 117-125)
+- Fixed Settings page client-side exception
+  - Added user loading check before rendering
+  - Fixed variable naming conflict (`data` → `errorData`)
+  - File: `/home/z/my-project/src/app/settings/page.tsx` (line 66-88, 95-102)
+- Created comprehensive bug documentation in `BUG_FIXES.md`
+
+**Issues Resolved:**
+1. ❌ "Validasi gagal" when saving transactions → ✅ Fixed
+2. ❌ Client-side exception in Settings page → ✅ Fixed
+3. ❌ Variable naming conflict → ✅ Fixed
+
+**Root Cause Analysis:**
+- **Transaction bug:** Field name mismatch between frontend (`transactionDetails`) and backend (`details`)
+- **Settings bug:** Component trying to access `user?.role` before user data loaded + variable shadowing
+
+**Stage Summary:**
+- All critical bugs resolved
+- Transaction save now works correctly
+- Settings page loads without errors
+- Complete technical documentation created
+
+---
+
 **Next Steps (Optional Enhancements):**
 1. Add email notifications for important events
 2. Add data export to PDF

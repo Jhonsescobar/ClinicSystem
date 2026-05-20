@@ -118,14 +118,10 @@ export default function TransactionsPage() {
         doctorId: form.doctorId,
         shiftId: form.shiftId,
         transactionDate: selectedDate,
-        transactionDetails: form.actions.map(action => {
-          const medicalAction = medicalActions.find(ma => ma.id === action.medicalActionId)
-          return {
-            medicalActionId: action.medicalActionId,
-            quantity: action.quantity,
-            unitPrice: medicalAction?.price || 0,
-          }
-        }),
+        details: form.actions.map(action => ({
+          medicalActionId: action.medicalActionId,
+          quantity: action.quantity,
+        })),
       }
 
       const url = editingId ? `/api/transactions/${editingId}` : '/api/transactions'

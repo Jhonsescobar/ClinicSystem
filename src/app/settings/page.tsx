@@ -75,8 +75,8 @@ export default function SettingsPage() {
       })
 
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Gagal mengubah status kunci')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Gagal mengubah status kunci')
       }
 
       const data = await response.json()
@@ -90,6 +90,15 @@ export default function SettingsPage() {
 
   const handleSaveSettings = () => {
     alert('Pengaturan berhasil disimpan (simulasi)')
+  }
+
+  // Don't render if user is not loaded yet
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    )
   }
 
   if (loading) {
