@@ -85,42 +85,21 @@ export default function AttendancePage() {
       return
     }
 
-    try {
-      // Upload photo first
-      const blob = await fetch(form.photoUrl).then(r => r.blob())
-      const file = new File([blob], 'attendance.jpg', { type: 'image/jpeg' })
+  try {
+    // Create attendance directly with base64 photo (no upload needed)
+    const now = new Date()
+    const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
 
-      const uploadFormData = new FormData()
-      uploadFormData.append('file', file)
-      uploadFormData.append('type', 'attendance')
-
-      const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        body: uploadFormData,
-      })
-
-      if (!uploadRes.ok) {
-        const errorText = await uploadRes.text()
-        throw new Error(errorText || 'Upload failed')
-      }
-
-      const uploadData = await uploadRes.json()
-
-      // Create attendance - HANYA kirim doctorId, TANPA manualDoctorName
-      const now = new Date()
-      const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-
-      const response = await fetch('/api/attendance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          doctorId: form.doctorId,
-          shiftId: form.shiftId,
-          photoUrl: uploadData.fileUrl,
-          attendanceDate: selectedDate,
-          attendanceTime: timeString,
-        }),
-      })
+    const response = await fetch('/api/attendance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...form,
+        photoUrl: form.photoUrl, // Base64 data directly
+        attendanceDate: selectedDate,
+        attendanceTime: timeString,
+      }),
+    })
 
       if (!response.ok) {
         const data = await response.json()
