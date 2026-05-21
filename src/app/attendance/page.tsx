@@ -11,9 +11,8 @@ import { ImageDialog } from '@/components/shared/ImageDialog'
 import { Camera, Plus, Trash2, Eye } from 'lucide-react'
 import { Doctor, Shift, Attendance } from '@/types'
 
-interface ActionItem {
-  doctorId?: string
-  manualDoctorName: string
+interface AttendanceFormData {
+  doctorId: string
   shiftId: string
   photoUrl: string
 }
@@ -29,9 +28,8 @@ export default function AttendancePage() {
   const [imageDialogOpen, setImageDialogOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string; title: string; subtitle: string } | null>(null)
 
-  const [form, setForm] = useState<ActionItem>({
+  const [form, setForm] = useState<AttendanceFormData>({
     doctorId: '',
-    manualDoctorName: '',
     shiftId: '',
     photoUrl: '',
   })
@@ -71,13 +69,19 @@ export default function AttendancePage() {
   }
 
   const handleSubmit = async () => {
-    if (!form.shiftId || !form.photoUrl) {
-      alert('Mohon lengkapi semua data')
+    // Validasi: wajib pilih dokter, shift, dan foto
+    if (!form.doctorId) {
+      alert('Mohon pilih dokter')
       return
     }
 
-    if (!form.doctorId && !form.manualDoctorName) {
-      alert('Mohon pilih dokter atau isi nama dokter substitusi')
+    if (!form.shiftId) {
+      alert('Mohon pilih shift')
+      return
+    }
+
+    if (!form.photoUrl) {
+      alert('Mohon ambil foto selfie')
       return
     }
 
@@ -102,7 +106,7 @@ export default function AttendancePage() {
 
       const uploadData = await uploadRes.json()
 
-      // Create attendance
+      // Create attendance - HANYA kirim doctorId, TANPA manualDoctorName
       const now = new Date()
       const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
 
@@ -110,7 +114,8 @@ export default function AttendancePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...form,
+          doctorId: form.doctorId,
+          shiftId: form.shiftId,
           photoUrl: uploadData.fileUrl,
           attendanceDate: selectedDate,
           attendanceTime: timeString,
@@ -125,7 +130,6 @@ export default function AttendancePage() {
       // Reset form
       setForm({
         doctorId: '',
-        manualDoctorName: '',
         shiftId: '',
         photoUrl: '',
       })
@@ -134,14 +138,15 @@ export default function AttendancePage() {
       // Refresh data
       await fetchData()
     } catch (error: any) {
-      alert(error.message || 'Terjadi kesalahan')
+      console.error('Submit error:', error)
+      alert(error.message || 'Terjadi kesalahan saat mencatat kehadiran')
     }
   }
 
   const handleViewImage = (attendance: Attendance) => {
     setSelectedImage({
       url: attendance.photoUrl,
-      title: attendance.doctor?.name || attendance.manualDoctorName || 'Dokter',
+      title: attendance.doctor?.name || 'Dokter',
       subtitle: `${attendance.shift?.name || ''} • ${attendance.attendanceDate} • ${attendance.attendanceTime}`,
     })
     setImageDialogOpen(true)
@@ -170,7 +175,7 @@ export default function AttendancePage() {
           <CardHeader>
             <CardTitle>Catat Kehadiran</CardTitle>
             <CardDescription>
-              Tambahkan kehadiran dokter baru
+              Pilih dokter, shift, dan ambil foto selfie
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -185,7 +190,7 @@ export default function AttendancePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="shift">Shift</Label>
+              <Label htmlFor="shift">Shift *</Label>
               <Select
                 value={form.shiftId}
                 onValueChange={(value) => setForm({ ...form, shiftId: value })}
@@ -204,11 +209,11 @@ export default function AttendancePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="doctor">Dokter</Label>
+              <Label htmlFor="doctor">Dokter *</Label>
               <Select
                 value={form.doctorId}
                 onValueChange={(value) => {
-                  setForm({ ...form, doctorId: value, manualDoctorName: '' })
+                  setForm({ ...form, doctorId: value })
                 }}
               >
                 <SelectTrigger id="doctor">
@@ -225,20 +230,7 @@ export default function AttendancePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="manualDoctor">Nama Dokter Substitusi (Opsional)</Label>
-              <Input
-                id="manualDoctor"
-                placeholder="Nama dokter substitusi"
-                value={form.manualDoctorName}
-                onChange={(e) => {
-                  setForm({ ...form, manualDoctorName: e.target.value, doctorId: '' })
-                }}
-                disabled={!!form.doctorId}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Foto Selfie</Label>
+              <Label>Foto Selfie *</Label>
               {tempPhoto ? (
                 <div className="relative rounded-lg overflow-hidden">
                   <img
@@ -270,10 +262,16 @@ export default function AttendancePage() {
               )}
             </div>
 
-            <Button className="w-full" onClick={handleSubmit}>
+            <Button className="w-full" onClick={handleSubmit} disabled={!form.doctorId || !form.shiftId || !form.photoUrl}>
               <Plus className="mr-2 h-4 w-4" />
               Catat Kehadiran
             </Button>
+
+            {(!form.doctorId || !form.shiftId || !form.photoUrl) && (
+              <p className="text-xs text-muted-foreground text-center">
+                * Wajib diisi
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -300,7 +298,7 @@ export default function AttendancePage() {
                     <div className="relative group">
                       <img
                         src={attendance.photoUrl}
-                        alt={attendance.doctor?.name || attendance.manualDoctorName}
+                        alt={attendance.doctor?.name || 'Dokter'}
                         className="w-16 h-16 rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => handleViewImage(attendance)}
                       />
@@ -310,7 +308,7 @@ export default function AttendancePage() {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">
-                        {attendance.doctor?.name || attendance.manualDoctorName}
+                        {attendance.doctor?.name || 'Dokter Tidak Dikenal'}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {attendance.shift?.name} • {attendance.attendanceTime}

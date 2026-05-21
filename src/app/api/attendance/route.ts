@@ -4,9 +4,9 @@ import { requireAuth } from '@/lib/auth'
 import { formatZodError } from '@/lib/zod-helper'
 import { z } from 'zod'
 
+// Schema sederhana - hanya mewajibkan doctorId
 const attendanceSchema = z.object({
-  doctorId: z.string().optional(),
-  manualDoctorName: z.string().optional(),
+  doctorId: z.string().min(1, 'Dokter diperlukan'),
   shiftId: z.string().min(1, 'Shift diperlukan'),
   photoUrl: z.string().min(1, 'Foto diperlukan'),
   attendanceDate: z.string().min(1, 'Tanggal diperlukan'),
@@ -60,16 +60,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const data = attendanceSchema.parse(body)
 
-    if (!data.doctorId && !data.manualDoctorName) {
-      return NextResponse.json(
-        { error: 'Dokter atau nama dokter substitusi diperlukan' },
-        { status: 400 }
-      )
-    }
-
     const attendance = await db.attendance.create({
       data: {
-        ...data,
+        doctorId: data.doctorId,
+        shiftId: data.shiftId,
+        photoUrl: data.photoUrl,
+        attendanceDate: data.attendanceDate,
+        attendanceTime: data.attendanceTime,
         adminId: user.id,
       },
       include: {
